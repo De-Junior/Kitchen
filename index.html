@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>What Can I Cook?</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+    }
+
+    header {
+      background: #ff7043;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 12px;
+      font-size: 16px;
+      background: #ff7043;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background: #ff5722;
+    }
+
+    .recipes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+
+    .card h3 {
+      padding: 10px;
+      font-size: 18px;
+    }
+
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 9999;
+}
+
+.modal-box {
+  background: white;
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 20px;
+  border-radius: 8px;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 20px;
+  border: none;
+  background: FF0000;
+  cursor: pointer;
+}
+	
+
+  </style>
+</head>
+
+
+
+<body>
+
+<header>
+  <h1>🍳Cook With James Junior</h1>
+  <p>Enter ingredients you have and get recipes</p>
+</header>
+
+<div class="container">
+  <input id="ingredients" placeholder="eggs, chicken, rice">
+  <button onclick="searchRecipes()">Find Recipes</button>
+
+  <div class="recipes" id="recipes"></div>
+</div>
+
+<script>
+  const API_KEY = "8f379e76cfe14f18b64692f1edeb6e95";
+
+  async function searchRecipes() {
+    const ingredients = document.getElementById("ingredients").value;
+    const recipesDiv = document.getElementById("recipes");
+
+    if (!ingredients) {
+      alert("Please enter ingredients");
+      return;
+    }
+
+    recipesDiv.innerHTML = "Loading recipes...";
+
+    const url = `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${ingredients}&number=12&apiKey=${API_KEY}`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      recipesDiv.innerHTML = "";
+
+      data.forEach(recipe => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+          <img src="${recipe.image}">
+          <h3>${recipe.title}</h3>
+        `;
+
+        card.onclick = () => getInstructions(recipe.id, recipe.title);
+
+        recipesDiv.appendChild(card);
+      });
+
+    } catch (error) {
+      recipesDiv.innerHTML = "Error fetching recipes.";
+      console.error(error);
+    }
+  }
+
+  // ✅ MOVED OUTSIDE (GLOBAL)
+  async function getInstructions(id, title) {
+    const modal = document.getElementById("modal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalContent = document.getElementById("modalContent");
+
+    modalTitle.innerText = title;
+    modalContent.innerHTML = "Loading instructions...";
+    modal.style.display = "block";
+
+    const url = `https://api.spoonacular.com/recipes/${id}/analyzedInstructions?apiKey=${API_KEY}`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.length === 0) {
+        modalContent.innerHTML = "No instructions available.";
+        return;
+      }
+
+      let stepsHTML = "<ol>";
+
+      data[0].steps.forEach(step => {
+        stepsHTML += `<li>${step.step}</li>`;
+      });
+
+      stepsHTML += "</ol>";
+
+      modalContent.innerHTML = stepsHTML;
+
+    } catch (error) {
+      modalContent.innerHTML = "Error loading instructions.";
+      console.error(error);
+    }
+  }
+
+  function closeModal() {
+    document.getElementById("modal").style.display = "none";
+  }
+</script>
+
+
+<div id="modal" class="modal">
+  <div class="modal-box">
+    <button class="close-btn" onclick="closeModal()">✖</button>
+    <h2 id="modalTitle"></h2>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+
+</body>
+</html>
